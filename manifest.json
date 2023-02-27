@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "TDT++ vs FAUST",
+  "version": "1.0",
+  "description": "used to link FAUST with Teensy Design Tool++",
+  "action": {
+    
+  },
+  "icons": {
+    "16": "icon.png",
+	"32": "icon.png",
+	"128": "icon.png"
+  },
+  "permissions": ["tabs","scripting"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "index.js"
+  }
+}
