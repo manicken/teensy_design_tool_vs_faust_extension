@@ -3,13 +3,19 @@
   "name": "TDT++ vs FAUST",
   "version": "1.0",
   "description": "used to link FAUST with Teensy Design Tool++",
-  "action": {
-    
-  },
+  "action": {},
   "icons": {
     "16": "icon.png",
 	"32": "icon.png",
 	"128": "icon.png"
+  },
+  "externally_connectable": {
+    "ids": ["*"],
+    // If this field is not specified, no webpages can connect.
+    "matches": [
+      "file:///G:/_git/manicken.github.io/index.html*"
+    ],
+    "accepts_tls_channel_id": false
   },
   "permissions": ["tabs","scripting"],
   "host_permissions": ["<all_urls>"],

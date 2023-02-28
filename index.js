@@ -1,6 +1,7 @@
 if (chrome != null) wb = chrome;
 else if (browser != null) wb = browser; // firefox
 
+var FAUST_IDE_URL = "https://faustide.grame.fr/";
 var faustTab;
 var designToolTab;
 
@@ -12,23 +13,72 @@ wb.tabs.onCreated.addListener(onTabCreated);
 
 //wb.tabs.onActivated.addListener(onTabActivated);
 //wb.tabs.onRemoved.addListener(onTabRemoved);
+/*wb.runtime.onMessage.addListener( function(request, sender, sendResponse) {
+    console.log(request, sender);
+    sendResponse({farewell: "goodbye"});
+  }
+);*/
+var designToolFaustData = {};
+var faustOpenOnce = false;
+
+wb.runtime.onMessageExternal.addListener( function(request, sender, sendResponse) {
+	if (sender.tab.title == "Audio System Design Tool++ for Teensy Audio Library") {
+		designToolTab = sender.tab;
+		designToolFaustData = request;
+		
+		console.log(request, sender);
+		faustOpenOnce = false;
+		wb.tabs.create({ url: FAUST_IDE_URL });
+		sendResponse("FAUST opened");
+	}
+    
+  }
+);
 
 
 function onTabUpdated(tabId, changeInfo, tab) {
 	//console.log("onTabUpdated:",tabId,changeInfo,tab);
-	if (tab.status == "complete" && tab.url == "https://faustide.grame.fr/" ) {
+	if (tab.status == "complete" && tab.url == FAUST_IDE_URL ) {
 		faustTab = tab;
 		console.log("FAUST detected");
+		
+		wb.scripting.executeScript({
+			target: {tabId:faustTab.id},
+			args: [designToolFaustData],
+			func: function(designToolFaustData) {
+				// this script runs in the FAUST IDE context
+				if (designToolFaustData.projectFiles != null)
+					localStorage.setItem("faust_editor_project", JSON.stringify(designToolFaustData.projectFiles));
+				if (designToolFaustData.projectParams != null)
+					localStorage.setItem("faust_editor_params", designToolFaustData.projectParams);
+				
+				//console.log(extId);
+				//document.getElementById("faustLinkExtId").innerHTML = extId;
+				//faustLinkExtId = extId;
+			}
+		}).then( ()=>{ if (faustOpenOnce == false) {faustOpenOnce = true; chrome.tabs.reload(faustTab.id);}});
 	}
-	else if (tab.status == "complete" && tab.url == "https://manicken.github.io/" ) {
+	else if (tab.status == "complete" && tab.title == "Audio System Design Tool++ for Teensy Audio Library") { //"https://manicken.github.io/" ) {
 		designToolTab = tab;
 		console.log("Design Tool++ detected");
+		wb.scripting.executeScript({
+			target: {tabId:designToolTab.id},
+			args: [wb.runtime.id],
+			func: function(extId) {
+				// this script runs in the Design Tool++ context
+				console.log(extId);
+				document.getElementById("faustLinkExtId").innerHTML = extId;
+				//faustLinkExtId = extId;
+			}
+		});
 	}
 }
 function onTabCreated(tab) {
-	console.log("onTabCreated:",tab);
+	if (faustTab == null) return;
+	
+	//console.log("onTabCreated:",tab);
 	if (tab.openerTabId == faustTab.id && tab.status == "complete" && tab.title == "" && tab.url == "") {
-		console.log("FAUST opened a download file tab");
+		//console.log("FAUST opened a download file tab");
 		wb.tabs.remove(tab.id);
 		wb.scripting.executeScript({
 			target: {tabId:faustTab.id},
@@ -46,12 +96,13 @@ function onTabCreated(tab) {
 			}
 		}).then(injectionResults => {
 			for (const {frameId, result} of injectionResults) {
-				console.log("Frame " + frameId + " result:", result);
+				//console.log("Frame " + frameId + " result:", result);
 				if (frameId == "0") {
 					wb.scripting.executeScript({
 						target: {tabId:designToolTab.id},
 						args: [result],
 						func: function(result) {
+							// this script runs in the Design Tool++ context
 							console.log(result);
 						}
 					});
@@ -76,6 +127,8 @@ function onTabRemoved(tab, removeInfo) {
 	console.log("onTabRemoved:",tab,removeInfo);
 }
 
+
+console.log("extension started");
 
 
 
